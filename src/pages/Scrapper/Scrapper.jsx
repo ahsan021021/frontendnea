@@ -21,10 +21,10 @@ function Scraper() {
   const navigate = useNavigate(); // Initialize useNavigate for navigation
 
   const [plans, setPlans] = useState([
-    { id: 'free', name: 'Free Plan', price: 0, features: ['Basic Features'] },
-    { id: 'basic', name: 'Basic Plan', price: 10, features: ['Feature 1', 'Feature 2'] },
-    { id: 'pro', name: 'Pro Plan', price: 29, features: ['Feature 1', 'Feature 2', 'Feature 3'] },
-    { id: 'premium', name: 'Premium Plan', price: 99, features: ['All Features'] },
+    { id: 'free', name: 'Free Plan', price: 0, features: ['Access to everything','Data scraper - 50/month','Email marketing - 50/month', 'Landing page builder - build 1 page but they cannot deploy' ] },
+    { id: 'basic', name: 'Basic Plan', price: 10, features: ['Data scraper - first 40 free and the rest depending upon api charges', 'Email marketing - 2000 email a month', 'Landing page builder - 1 landing page with deploy' ] },
+    { id: 'pro', name: 'Standard Plan', price: 29, features: ['Data scraper - first 40 free and the rest depending upon api charges', 'Email marketing - 5000 email a month', 'Landing page builder - 2 landing page with deploy'] },
+    { id: 'premium', name: 'Enterprise Plan', price: 99, features: ['Data scraper - first 40 free and the rest depending upon api charges', 'Email marketing - 10k email a month', 'Landing page builder - 3 landing page with deploy' ] },
   ]);
   const [selectedPlan, setSelectedPlan] = useState(null);
 

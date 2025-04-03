@@ -173,9 +173,7 @@ const Dashboard = () => {
             <button className="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg flex items-center gap-2" onClick={() => navigate("/email/campaigns")}>
               + New Campaign
             </button>
-            <button className="bg-gray-800 p-2 rounded-lg">
-              <Bell className="h-5 w-5" />
-            </button>
+            
           </div>
         </div>
 

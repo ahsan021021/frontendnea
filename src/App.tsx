@@ -169,14 +169,14 @@ const App = () => {
               <SettingsSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
               <main className="flex-1 p-4 lg:p-8">
                 {/* Back to Dashboard Button */}
-          <div className="absolute top-4 right-4">
-            <button
-             
-              className="bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-600 transition duration-200"
-            >
-              Back to Dashboard
-            </button>
-          </div>
+                <div className="absolute top-4 right-4 z-[1000]">
+                  <button
+                    onClick={() => window.location.href = '/dashboard'}
+                    className="bg-red-500 text-white px-4 py-2 rounded-lg shadow-md hover:bg-red-600 transition duration-200"
+                  >
+                    Back to Dashboard
+                  </button>
+                </div>
                 <div className="max-w-4xl mx-auto">
                   <Outlet />
                 </div>
