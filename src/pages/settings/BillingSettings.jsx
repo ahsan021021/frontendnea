@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
 import { loadStripe } from '@stripe/stripe-js';
 import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
-import { CreditCard, CheckCircle, Trash2, AlertTriangle } from 'lucide-react';
+import { CreditCard, CheckCircle } from 'lucide-react';
 import axios from 'axios';
 import Confetti from 'react-confetti';
 
@@ -22,13 +22,121 @@ function BillingSettings() {
   const [showSuccessPopup, setShowSuccessPopup] = useState(false);
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(true);
-  const [showDeletePopup, setShowDeletePopup] = useState(false);
-  const [paymentMethodToDelete, setPaymentMethodToDelete] = useState(null);
+const [showDeletePopup, setShowDeletePopup] = useState(false);
+const [paymentMethodToDelete, setPaymentMethodToDelete] = useState(null);
 
-  const stripe = useStripe();
-  const elements = useElements();
+// Fetch payment methods
+useEffect(() => {
+  const fetchPaymentMethods = async () => {
+    try {
+      const token = sessionStorage.getItem('token');
+      const response = await axios.get('https://api.leadsavvyai.com/api/payment/get-payment-methods', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setPaymentMethods(response.data.paymentMethods);
+    } catch (error) {
+      console.error('Error fetching payment methods:', error);
+      setMessage('Failed to fetch payment methods.');
+    }
+  };
 
-  // Fetch payment methods and current subscription plan
+  fetchPaymentMethods();
+}, []);
+
+// Add payment method
+const handleAddPaymentMethod = async (e) => {
+  e.preventDefault();
+
+  if (!stripe || !elements) {
+    setMessage('Stripe.js has not loaded yet.');
+    return;
+  }
+
+  const cardElement = elements.getElement(CardElement);
+
+  try {
+    const { error, paymentMethod } = await stripe.createPaymentMethod({
+      type: 'card',
+      card: cardElement,
+    });
+
+    if (error) {
+      setMessage(`Error: ${error.message}`);
+      return;
+    }
+
+    const token = sessionStorage.getItem('token');
+    const response = await axios.post(
+      'https://api.leadsavvyai.com/api/payment/add-payment-method',
+      { paymentMethodId: paymentMethod.id },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+
+    setMessage(response.data.message);
+
+    const updatedPaymentMethodsResponse = await axios.get('https://api.leadsavvyai.com/api/payment/get-payment-methods', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setPaymentMethods(updatedPaymentMethodsResponse.data.paymentMethods);
+
+    cardElement.clear();
+  } catch (error) {
+    console.error('Error adding payment method:', error);
+    setMessage('Failed to add payment method.');
+  }
+};
+
+// Delete payment method
+const handleDeletePaymentMethod = async () => {
+  if (!paymentMethodToDelete) return;
+
+  try {
+    const token = sessionStorage.getItem('token');
+    const response = await axios.delete(`https://api.leadsavvyai.com/api/payment/delete-payment-method/${paymentMethodToDelete}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setMessage(response.data.message);
+
+    const updatedPaymentMethodsResponse = await axios.get('https://api.leadsavvyai.com/api/payment/get-payment-methods', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setPaymentMethods(updatedPaymentMethodsResponse.data.paymentMethods);
+
+    setShowDeletePopup(false);
+    setPaymentMethodToDelete(null);
+  } catch (error) {
+    console.error('Error deleting payment method:', error);
+    setMessage('Failed to delete payment method.');
+  }
+};
+
+// Set default payment method
+const handleSetDefaultPaymentMethod = async (paymentMethodId) => {
+  try {
+    const token = sessionStorage.getItem('token');
+    const response = await axios.post(
+      'https://api.leadsavvyai.com/api/payment/set-default-payment-method',
+      { paymentMethodId },
+      {
+        headers: { Authorization: `Bearer ${token}` },
+      }
+    );
+    setMessage(response.data.message);
+
+    const updatedPaymentMethodsResponse = await axios.get('https://api.leadsavvyai.com/api/payment/get-payment-methods', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setPaymentMethods(updatedPaymentMethodsResponse.data.paymentMethods);
+  } catch (error) {
+    console.error('Error setting default payment method:', error);
+    setMessage('Failed to set default payment method.');
+  }
+};
+
+
+
   useEffect(() => {
     const fetchBillingDetails = async () => {
       try {
@@ -55,98 +163,6 @@ function BillingSettings() {
 
     fetchBillingDetails();
   }, []);
-
-  // Add payment method
-  const handleAddPaymentMethod = async (e) => {
-    e.preventDefault();
-
-    if (!stripe || !elements) {
-      setMessage('Stripe.js has not loaded yet.');
-      return;
-    }
-
-    const cardElement = elements.getElement(CardElement);
-
-    try {
-      const { error, paymentMethod } = await stripe.createPaymentMethod({
-        type: 'card',
-        card: cardElement,
-      });
-
-      if (error) {
-        setMessage(`Error: ${error.message}`);
-        return;
-      }
-
-      const token = sessionStorage.getItem('token');
-      const response = await axios.post(
-        'https://api.leadsavvyai.com/api/payment/add-payment-method',
-        { paymentMethodId: paymentMethod.id },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-
-      setMessage(response.data.message);
-
-      const updatedPaymentMethodsResponse = await axios.get('https://api.leadsavvyai.com/api/payment/get-payment-methods', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setPaymentMethods(updatedPaymentMethodsResponse.data.paymentMethods);
-
-      cardElement.clear();
-    } catch (error) {
-      console.error('Error adding payment method:', error);
-      setMessage('Failed to add payment method.');
-    }
-  };
-
-  // Delete payment method
-  const handleDeletePaymentMethod = async () => {
-    if (!paymentMethodToDelete) return;
-
-    try {
-      const token = sessionStorage.getItem('token');
-      const response = await axios.delete(`https://api.leadsavvyai.com/api/payment/delete-payment-method/${paymentMethodToDelete}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setMessage(response.data.message);
-
-      const updatedPaymentMethodsResponse = await axios.get('https://api.leadsavvyai.com/api/payment/get-payment-methods', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setPaymentMethods(updatedPaymentMethodsResponse.data.paymentMethods);
-
-      setShowDeletePopup(false);
-      setPaymentMethodToDelete(null);
-    } catch (error) {
-      console.error('Error deleting payment method:', error);
-      setMessage('Failed to delete payment method.');
-    }
-  };
-
-  // Set default payment method
-  const handleSetDefaultPaymentMethod = async (paymentMethodId) => {
-    try {
-      const token = sessionStorage.getItem('token');
-      const response = await axios.post(
-        'https://api.leadsavvyai.com/api/payment/set-default-payment-method',
-        { paymentMethodId },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
-      setMessage(response.data.message);
-
-      const updatedPaymentMethodsResponse = await axios.get('https://api.leadsavvyai.com/api/payment/get-payment-methods', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setPaymentMethods(updatedPaymentMethodsResponse.data.paymentMethods);
-    } catch (error) {
-      console.error('Error setting default payment method:', error);
-      setMessage('Failed to set default payment method.');
-    }
-  };
 
   const handleSelectPlan = (planId) => {
     if (planId === 'free') {
@@ -224,92 +240,6 @@ function BillingSettings() {
         </div>
       </div>
 
-      {/* Payment Methods Section */}
-      <div className="bg-gray-800 p-6 rounded-lg shadow-md">
-        <h3 className="text-xl font-semibold mb-4">Payment Methods</h3>
-        {paymentMethods.length > 0 ? (
-          paymentMethods.map((method) => (
-            <div
-              key={method.id}
-              className={`flex items-center justify-between p-4 border border-gray-700 rounded-lg mb-4 ${
-                method.isDefault ? 'bg-gray-700' : ''
-              }`}
-            >
-              <div className="flex items-center gap-4">
-                <CreditCard className="w-8 h-8" />
-                <div>
-                  <p className="font-semibold">•••• •••• •••• {method.last4}</p>
-                  <p className="text-sm text-gray-400">
-                    {method.brand} - Expires {method.expMonth}/{method.expYear}
-                  </p>
-                </div>
-              </div>
-              <div className="flex items-center gap-2">
-                {!method.isDefault && (
-                  <button
-                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                    onClick={() => handleSetDefaultPaymentMethod(method.id)}
-                  >
-                    Set as Default
-                  </button>
-                )}
-                <button
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                  onClick={() => {
-                    setPaymentMethodToDelete(method.id);
-                    setShowDeletePopup(true);
-                  }}
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
-            </div>
-          ))
-        ) : (
-          <p className="text-gray-400 mb-4">No payment methods found. Add one below.</p>
-        )}
-
-        <form onSubmit={handleAddPaymentMethod}>
-          <div className="p-4 border border-gray-700 rounded-lg mb-4">
-            <CardElement />
-          </div>
-          <button className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700" type="submit">
-            Add Payment Method
-          </button>
-        </form>
-        {message && <p className="text-sm text-gray-400 mt-2">{message}</p>}
-      </div>
-
-      {/* Delete Payment Method Popup */}
-      {showDeletePopup && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md text-center">
-            <AlertTriangle className="w-12 h-12 text-yellow-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold mb-2">Are you sure?</h3>
-            <p className="text-gray-400 mb-4">
-              Removing this card will prevent you from making future purchases with it.
-            </p>
-            <div className="flex justify-end gap-2">
-              <button
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
-                onClick={() => {
-                  setShowDeletePopup(false);
-                  setPaymentMethodToDelete(null);
-                }}
-              >
-                Cancel
-              </button>
-              <button
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
-                onClick={handleDeletePaymentMethod}
-              >
-                Delete
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Payment Modal */}
       {showPaymentModal && (
         <PaymentModal
@@ -345,37 +275,95 @@ function PaymentModal({ selectedPlan, onClose, onSuccess, onError }) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
+  const [savedPaymentMethods, setSavedPaymentMethods] = useState([]);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState(null);
+  const [savePaymentMethod, setSavePaymentMethod] = useState(false);
+
+  useEffect(() => {
+    const fetchPaymentMethods = async () => {
+      try {
+        const response = await axios.get('https://api.leadsavvyai.com/api/payment/get-payment-methods', {
+          headers: {
+            Authorization: `Bearer ${sessionStorage.getItem('token')}`,
+          },
+        });
+
+        if (response.status === 200) {
+          setSavedPaymentMethods(response.data.paymentMethods || []);
+        }
+      } catch (error) {
+        console.error('Error fetching payment methods:', error);
+      }
+    };
+
+    fetchPaymentMethods();
+  }, []);
 
   const handlePayment = async (e) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const cardElement = elements.getElement(CardElement);
-      const { paymentMethod, error } = await stripe.createPaymentMethod({
-        type: 'card',
-        card: cardElement,
-      });
+      if (selectedPaymentMethod) {
+        // Use saved payment method
+        const response = await axios.post(
+          'https://api.leadsavvyai.com/api/payment/create-subscription',
+          { planId: selectedPlan, paymentMethodId: selectedPaymentMethod },
+          {
+            headers: {
+              Authorization: `Bearer ${sessionStorage.getItem('token')}`,
+            },
+          }
+        );
 
-      if (error) {
-        onError(error.message);
-        setLoading(false);
-        return;
-      }
-
-      const token = sessionStorage.getItem('token');
-      const response = await axios.post(
-        'https://api.leadsavvyai.com/api/payment/create-subscription',
-        { planId: selectedPlan, paymentMethodId: paymentMethod.id },
-        {
-          headers: { Authorization: `Bearer ${token}` },
+        if (response.status === 200) {
+          onSuccess(response.data.message || 'Subscription created successfully.');
+        } else {
+          onError(response.data.message || 'Subscription failed. Please try again.');
         }
-      );
-
-      if (response.status === 200) {
-        onSuccess(response.data.message || 'Subscription created successfully.');
       } else {
-        onError(response.data.message || 'Subscription failed. Please try again.');
+        // Use new card details
+        const cardElement = elements.getElement(CardElement);
+        const { paymentMethod, error } = await stripe.createPaymentMethod({
+          type: 'card',
+          card: cardElement,
+        });
+
+        if (error) {
+          onError(error.message);
+          setLoading(false);
+          return;
+        }
+
+        if (savePaymentMethod) {
+          // Save the payment method
+          const token = sessionStorage.getItem('token');
+          await axios.post(
+            'https://api.leadsavvyai.com/api/payment/add-payment-method',
+            { paymentMethodId: paymentMethod.id },
+            {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
+        }
+
+        const response = await axios.post(
+          'https://api.leadsavvyai.com/api/payment/create-subscription',
+          { planId: selectedPlan, paymentMethodId: paymentMethod.id },
+          {
+            headers: {
+              Authorization: `Bearer ${sessionStorage.getItem('token')}`,
+            },
+          }
+        );
+
+        if (response.status === 200) {
+          onSuccess(response.data.message || 'Subscription created successfully.');
+        } else {
+          onError(response.data.message || 'Subscription failed. Please try again.');
+        }
       }
     } catch (error) {
       console.error('Error processing payment:', error);
@@ -390,8 +378,43 @@ function PaymentModal({ selectedPlan, onClose, onSuccess, onError }) {
       <div className="bg-gray-800 p-6 rounded-lg shadow-lg w-full max-w-md">
         <h3 className="text-xl font-semibold text-white mb-4">Complete Your Payment</h3>
         <form onSubmit={handlePayment}>
-          <div className="p-4 border border-gray-700 rounded-lg mb-4">
-            <CardElement />
+          <div className="mb-4">
+            <h4 className="text-lg font-semibold text-white mb-2">Saved Payment Methods</h4>
+            {savedPaymentMethods.length > 0 ? (
+              savedPaymentMethods.map((method) => (
+                <div key={method.id} className="flex items-center gap-4 mb-2">
+                  <input
+                    type="radio"
+                    id={method.id}
+                    name="paymentMethod"
+                    value={method.id}
+                    onChange={() => setSelectedPaymentMethod(method.id)}
+                  />
+                  <label htmlFor={method.id} className="text-white">
+                    {method.brand} •••• {method.last4} (Expires {method.expMonth}/{method.expYear})
+                  </label>
+                </div>
+              ))
+            ) : (
+              <p className="text-gray-400">No saved payment methods found.</p>
+            )}
+          </div>
+          <div className="mb-4">
+            <h4 className="text-lg font-semibold text-white mb-2">Add New Card</h4>
+            <div className="p-4 border border-gray-700 rounded-lg">
+              <CardElement />
+            </div>
+            <div className="mt-2">
+              <label className="flex items-center text-white">
+                <input
+                  type="checkbox"
+                  className="mr-2"
+                  checked={savePaymentMethod}
+                  onChange={(e) => setSavePaymentMethod(e.target.checked)}
+                />
+                Save this payment method for future use
+              </label>
+            </div>
           </div>
           <div className="flex justify-end gap-4">
             <button
