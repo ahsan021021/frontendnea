@@ -3,7 +3,8 @@ import { KeyRound } from 'lucide-react';
 export default function VerifyCode({
   verificationCode,
   onVerificationCodeChange,
-  onSubmit
+  onSubmit,
+  message // Pass the message object with text and type (success or error)
 }) {
   return (
     <div className="w-full max-w-md bg-black/90 backdrop-blur-lg rounded-2xl p-4 sm:p-6 md:p-8 shadow-2xl shadow-red-500/20">
@@ -34,6 +35,16 @@ export default function VerifyCode({
         >
           Verify Code
         </button>
+
+        {message?.text && (
+          <p
+            className={`text-center text-sm mt-2 ${
+              message.type === 'success' ? 'text-green-500' : 'text-red-500'
+            }`}
+          >
+            {message.text}
+          </p>
+        )}
       </form>
     </div>
   );

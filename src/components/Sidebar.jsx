@@ -48,7 +48,7 @@ const Sidebar = ({ isSidebarOpen, toggleSidebar }) => {
       </button>
 
       <div className={`w-64 bg-gradient-to-b from-red-900 to-black p-5 flex flex-col h-screen`}>
-        <div className="flex flex-col flex-grow overflow-y-auto">
+        <div className="flex flex-col flex-grow overflow-y-auto scrollbar-hide">
           <div>
             <div className="flex justify-between items-center">
               <h1 className="text-2xl text-red-600 mb-5">Lead Savvy</h1>

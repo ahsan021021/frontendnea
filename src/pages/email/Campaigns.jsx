@@ -25,8 +25,18 @@ function Campaigns() {
   const [selectedEmailColumn, setSelectedEmailColumn] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-
-  // Create axios instance with token from sessionStorage
+  const [showUpgradePopup, setShowUpgradePopup] = useState(false); // State for upgrade popup
+const [plans, setPlans] = useState([
+  { id: 'basic', name: 'Basic Plan', price: 10, features: ['2000 emails/month', 'Advanced templates'] },
+  { id: 'pro', name: 'Pro Plan', price: 29, features: ['5000 emails/month', 'Premium templates'] },
+  { id: 'premium', name: 'Enterprise Plan', price: 99, features: ['Unlimited campaigns', 'Custom templates'] },
+]);
+  const handleSelectPlan = (planId) => {
+    console.log(`Selected Plan: ${planId}`);
+    // Redirect to the billing page or handle plan selection logic
+    window.location.href = '/settings/billing';
+  };
+  // Create axios instance with token from localStorage
   const axiosInstance = axios.create({
     baseURL: 'https://api.leadsavvyai.com/api',
   });
@@ -178,7 +188,13 @@ function Campaigns() {
       alert('Campaign sent successfully!');
     } catch (error) {
       console.error('Error sending campaign:', error);
-      setError('Failed to send campaign. Please try again.');
+  
+      // Show upgrade popup if the error is due to reaching the plan limit
+      if (error.response?.status === 403) {
+        setShowUpgradePopup(true);
+      } else {
+        setError('Failed to send campaign. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -431,6 +447,47 @@ function Campaigns() {
           </div>
         </div>
       )}
+      {/* Upgrade Popup */}
+{showUpgradePopup && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div className="bg-white p-6 rounded-lg shadow-lg w-full max-w-2xl">
+      <h3 className="text-2xl font-bold text-gray-800 mb-4">Upgrade Your Plan</h3>
+      <p className="text-gray-600 mb-6">
+        You have reached the limit for the Free Plan. Select a plan to continue sending campaigns.
+      </p>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {plans.map((plan) => (
+          <div
+            key={plan.id}
+            className="p-4 border border-gray-300 rounded-lg hover:shadow-md transition-shadow"
+          >
+            <h4 className="text-lg font-semibold text-gray-800">{plan.name}</h4>
+            <p className="text-gray-600">${plan.price}/month</p>
+            <ul className="mt-2 text-gray-600 text-sm space-y-1">
+              {plan.features.map((feature, index) => (
+                <li key={index}>- {feature}</li>
+              ))}
+            </ul>
+            <button
+              className="mt-4 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+              onClick={() => handleSelectPlan(plan.id)}
+            >
+              Select Plan
+            </button>
+          </div>
+        ))}
+      </div>
+      <div className="mt-6 text-right">
+        <button
+          className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+          onClick={() => setShowUpgradePopup(false)}
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
 
       {/* Mapping Modal */}
       {showMappingModal && (
@@ -469,5 +526,6 @@ function Campaigns() {
     </div>
   );
 }
+
 
 export default Campaigns;

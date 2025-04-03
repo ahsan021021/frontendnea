@@ -5,7 +5,7 @@ import axios from "axios";
 
 export function VerifyCodePage() {
   const [verificationCode, setVerificationCode] = useState("");
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState({ text: "", type: "" }); // Message with type (success or error)
   const [loading, setLoading] = useState(false); // Track loading state
   const location = useLocation();
   const navigate = useNavigate();
@@ -22,14 +22,14 @@ export function VerifyCodePage() {
       console.log(response.data);
       const { token } = response.data;
       sessionStorage.setItem("token", token);
-      setMessage("Email verified successfully!");
+      setMessage({ text: "Email verified successfully!", type: "success" }); // Success message
       // Delay before redirecting to the welcome page
       setTimeout(() => {
         navigate("/welcome");
       }, 3000); // 3 seconds delay
     } catch (error) {
       console.error("There was an error verifying the email!", error);
-      setMessage("Invalid verification code. Please try again.");
+      setMessage({ text: "Invalid verification code. Please try again.", type: "error" }); // Error message
     } finally {
       setLoading(false); // Set loading to false when verification is complete
     }
@@ -68,7 +68,15 @@ export function VerifyCodePage() {
           {loading ? "Verifying..." : "Verify Code"}
         </button>
 
-        {message && <p className="text-center text-sm text-red-500 mt-2">{message}</p>}
+        {message.text && (
+          <p
+            className={`text-center text-sm mt-2 ${
+              message.type === "success" ? "text-green-500" : "text-red-500"
+            }`}
+          >
+            {message.text}
+          </p>
+        )}
       </form>
     </div>
   );

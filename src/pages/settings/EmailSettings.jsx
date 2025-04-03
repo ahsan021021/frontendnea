@@ -50,24 +50,47 @@ function EmailSettings() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post('https://api.leadsavvyai.com/api/email-settings', formData, {
+      // Check if email settings already exist
+      const checkResponse = await axios.get('https://api.leadsavvyai.com/api/email-settings', {
         headers: {
-          'Content-Type': 'application/json',
           Authorization: `Bearer ${sessionStorage.getItem('token')}`,
         },
       });
-
-      if (response.status === 201 || response.status === 200) {
-        toast.success('Email settings updated successfully!');
+  
+      // If settings exist, send a PUT request to update them
+      if (checkResponse.status === 200 && checkResponse.data) {
+        const response = await axios.put('https://api.leadsavvyai.com/api/email-settings', formData, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${sessionStorage.getItem('token')}`,
+          },
+        });
+  
+        if (response.status === 200) {
+          toast.success('Email settings updated successfully!');
+        } else {
+          toast.error('Failed to update email settings');
+        }
       } else {
-        toast.error('Failed to update email settings');
+        // If settings do not exist, send a POST request to create them
+        const response = await axios.post('https://api.leadsavvyai.com/api/email-settings', formData, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${sessionStorage.getItem('token')}`,
+          },
+        });
+  
+        if (response.status === 201 || response.status === 200) {
+          toast.success('Email settings created successfully!');
+        } else {
+          toast.error('Failed to create email settings');
+        }
       }
     } catch (error) {
-      console.error('Error updating email settings:', error);
-      toast.error('An error occurred while updating email settings');
+      console.error('Error saving email settings:', error);
+      toast.error('An error occurred while saving email settings');
     }
   };
-
   // Handle testing the email connection
   const handleTestConnection = async () => {
     try {
